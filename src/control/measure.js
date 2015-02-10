@@ -520,7 +520,6 @@ var MeasureControl = L.Control.extend({
       .off(map, 'click', off, this)
       .off(map, 'dblclick', this._handlerDeactivated, this)
       .off(map, 'mousemove', this._mouseMove, this);
-    L.DomUtil.removeClass(this._buttonArea, 'pressed');
   },
   _toggleMeasure: function() {
     var map = this._map;

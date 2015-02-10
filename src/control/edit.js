@@ -1,4 +1,4 @@
-/* global L */
+/* global L,NPMap */
 /* jshint camelcase: false */
 
 /**
@@ -125,6 +125,7 @@ var EditControl = L.Control.extend({
     });
     map.on('draw:created', function(e) {
       me._featureGroup.addLayer(e.layer);
+      e.layer.bindPopup('');
 
       if (e.layerType === 'marker') {
         e.layer.dragging.enable();
@@ -148,6 +149,7 @@ var EditControl = L.Control.extend({
     return container;
   },
   _handlerActivated: function(e) {
+    NPMap.config.L.measureControl.deactivate();
     if (this._activeMode && this._activeMode.handler.enabled()) {
       this._activeMode.handler.disable();
     }

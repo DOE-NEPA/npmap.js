@@ -1,4 +1,4 @@
-/* global L */
+/* global L,NPMap */
 /* jshint camelcase: false */
 
 'use strict';
@@ -57,12 +57,12 @@ var MeasureControl = L.Control.extend({
   },
   initialize: function(options) {
     L.Util.setOptions(this, options);
-    this._activeMode = null;
+    this._activeState = null;
     this._activePoint = null;
     this._activePolygon = null;
     this._activeTooltip = null;
-    this._featureGroup = new L.FeatureGroup();
-    this._modes = {};
+    this._featuresGroup = new L.FeatureGroup();
+    this._measureModes = {};
 
     if (this.options && this.options.units) {
       var unit;
@@ -136,9 +136,9 @@ var MeasureControl = L.Control.extend({
       }
 
       this._menu.appendChild(liSelect);
-      map.addLayer(this._featureGroup);
       this._initializeMode(this._buttonArea, new L.Draw.Polygon(map, this.options.polygon));
       this._initializeMode(this._buttonDistance, new L.Draw.Polyline(map, this.options.polyline));
+      map.addLayer(this._featuresGroup);
       this._setupListeners();
 
       return this._container;
@@ -203,11 +203,11 @@ var MeasureControl = L.Control.extend({
         if (this._selectUnitArea) {
           this._selectUnitArea.style.display = 'none';
           remove = this._buttonArea;
-          this._modes.polygon.handler.disable();
+          this._measureModes.polygon.handler.disable();
         }
 
         this._selectUnitDistance.style.display = 'block';
-        this._modes.polyline.handler.enable();
+        this._measureModes.polyline.handler.enable();
       } else {
         add = this._buttonArea;
         mode = 'area';
@@ -215,11 +215,11 @@ var MeasureControl = L.Control.extend({
         if (this._selectUnitDistance) {
           this._selectUnitDistance.style.display = 'none';
           remove = this._buttonDistance;
-          this._modes.polyline.handler.disable();
+          this._measureModes.polyline.handler.disable();
         }
 
         this._selectUnitArea.style.display = 'block';
-        this._modes.polygon.handler.enable();
+        this._measureModes.polygon.handler.enable();
       }
 
       L.DomUtil.addClass(add, 'pressed');
@@ -314,18 +314,18 @@ var MeasureControl = L.Control.extend({
           -5
         ]
       })
-    }).addTo(this._featureGroup);
+    }).addTo(this._featuresGroup);
   },
   _handlerActivated: function(e) {
-    if (this._activeMode && this._activeMode.handler.enabled()) {
-      this._activeMode.handler.disable();
+    if (this._activeState && this._activeState.handler.enabled()) {
+      this._activeState.handler.disable();
     }
 
-    this._activeMode = this._modes[e.handler];
+    this._activeState = this._measureModes[e.handler];
     this.fire('enable');
   },
   _handlerDeactivated: function() {
-    this._activeMode = null;
+    this._activeState = null;
     this._activePoint = null;
     this._activePolygon = null;
     this._activeTooltip = null;
@@ -339,11 +339,11 @@ var MeasureControl = L.Control.extend({
   _initializeMode: function(button, handler) {
     var type = handler.type;
 
-    this._modes[type] = {
+    this._measureModes[type] = {
       button: button,
       handler: handler
     };
-    this._modes[type].handler
+    this._measureModes[type].handler
       .on('disabled', this._handlerDeactivated, this)
       .on('enabled', this._handlerActivated, this);
   },
@@ -359,7 +359,7 @@ var MeasureControl = L.Control.extend({
 
       if (latLngs.length > 2) {
         if (this._activeTooltip) {
-          this._featureGroup.removeLayer(this._activeTooltip);
+          this._featuresGroup.removeLayer(this._activeTooltip);
         }
 
         this._area = this._calculateArea(this._activeUnitArea, L.GeometryUtil.geodesicArea(latLngs));
@@ -472,7 +472,7 @@ var MeasureControl = L.Control.extend({
     }
   },
   _removeTempTooltip: function() {
-    this._featureGroup.removeLayer(this._tempTooltip);
+    this._featuresGroup.removeLayer(this._tempTooltip);
     this._tempTooltip = null;
   },
   _setupListeners: function() {
@@ -482,7 +482,7 @@ var MeasureControl = L.Control.extend({
       .disableClickPropagation(this._button)
       .disableClickPropagation(this._menu)
       .on(this._button, 'click', this._toggleMeasure, this);
-
+  
     if (this._buttonArea) {
       L.DomEvent
         .on(this._buttonArea, 'click', this._buttonClick, this)
@@ -496,7 +496,7 @@ var MeasureControl = L.Control.extend({
     }
 
     this._map.on('draw:created', function(e) {
-      me._featureGroup.addLayer(e.layer);
+      me._featuresGroup.addLayer(e.layer);
     });
   },
   _startMeasuring: function(type) {
@@ -520,17 +520,18 @@ var MeasureControl = L.Control.extend({
       .off(map, 'click', off, this)
       .off(map, 'dblclick', this._handlerDeactivated, this)
       .off(map, 'mousemove', this._mouseMove, this);
+    L.DomUtil.removeClass(this._buttonArea, 'pressed');
   },
   _toggleMeasure: function() {
     var map = this._map;
 
     if (L.DomUtil.hasClass(this._button, 'pressed')) {
       L.DomUtil.removeClass(this._button, 'pressed');
+      this._activeState.handler.disable();
       this._menu.style.display = 'none';
       this._stopMeasuring(this._clicked);
-      this._featureGroup.clearLayers();
-      this._map._controllingInteractivity = true;
-      this._activeMode.handler.disable();
+      this._featuresGroup.clearLayers();
+      map._controllingInteractivity = true;
     } else {
       L.DomUtil.addClass(this._button, 'pressed');
       this._menu.style.display = 'block';
@@ -560,7 +561,6 @@ var MeasureControl = L.Control.extend({
   },
   deactivate: function() {
     if (L.DomUtil.hasClass(this._button, 'pressed')) {
-      this._stopMeasuring('area');
       this._toggleMeasure();
     }
   }

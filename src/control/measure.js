@@ -57,11 +57,11 @@ var MeasureControl = L.Control.extend({
   },
   initialize: function(options) {
     L.Util.setOptions(this, options);
-    this._activeState = null;
+    this._activeMode = null;
     this._activePoint = null;
     this._activePolygon = null;
     this._activeTooltip = null;
-    this._featuresGroup = new L.FeatureGroup();
+    this._featureGroup = new L.FeatureGroup();
     this._measureModes = {};
 
     if (this.options && this.options.units) {
@@ -138,7 +138,7 @@ var MeasureControl = L.Control.extend({
       this._menu.appendChild(liSelect);
       this._initializeMode(this._buttonArea, new L.Draw.Polygon(map, this.options.polygon));
       this._initializeMode(this._buttonDistance, new L.Draw.Polyline(map, this.options.polyline));
-      map.addLayer(this._featuresGroup);
+      map.addLayer(this._featureGroup);
       this._setupListeners();
 
       return this._container;
@@ -314,18 +314,18 @@ var MeasureControl = L.Control.extend({
           -5
         ]
       })
-    }).addTo(this._featuresGroup);
+    }).addTo(this._featureGroup);
   },
   _handlerActivated: function(e) {
-    if (this._activeState && this._activeState.handler.enabled()) {
-      this._activeState.handler.disable();
+    if (this._activeMode && this._activeMode.handler.enabled()) {
+      this._activeMode.handler.disable();
     }
 
-    this._activeState = this._measureModes[e.handler];
+    this._activeMode = this._measureModes[e.handler];
     this.fire('enable');
   },
   _handlerDeactivated: function() {
-    this._activeState = null;
+    this._activeMode = null;
     this._activePoint = null;
     this._activePolygon = null;
     this._activeTooltip = null;
@@ -359,7 +359,7 @@ var MeasureControl = L.Control.extend({
 
       if (latLngs.length > 2) {
         if (this._activeTooltip) {
-          this._featuresGroup.removeLayer(this._activeTooltip);
+          this._featureGroup.removeLayer(this._activeTooltip);
         }
 
         this._area = this._calculateArea(this._activeUnitArea, L.GeometryUtil.geodesicArea(latLngs));
@@ -370,6 +370,7 @@ var MeasureControl = L.Control.extend({
         latLng
       ]);
       this._area = 0;
+      debugger;
     }
 
     if (this._tempTooltip) {
@@ -472,7 +473,7 @@ var MeasureControl = L.Control.extend({
     }
   },
   _removeTempTooltip: function() {
-    this._featuresGroup.removeLayer(this._tempTooltip);
+    this._featureGroup.removeLayer(this._tempTooltip);
     this._tempTooltip = null;
   },
   _setupListeners: function() {
@@ -496,7 +497,7 @@ var MeasureControl = L.Control.extend({
     }
 
     this._map.on('draw:created', function(e) {
-      me._featuresGroup.addLayer(e.layer);
+      me._featureGroup.addLayer(e.layer);
     });
   },
   _startMeasuring: function(type) {
@@ -526,10 +527,10 @@ var MeasureControl = L.Control.extend({
 
     if (L.DomUtil.hasClass(this._button, 'pressed')) {
       L.DomUtil.removeClass(this._button, 'pressed');
-      this._activeState.handler.disable();
+      this._activeMode.handler.disable();
       this._menu.style.display = 'none';
       this._stopMeasuring(this._clicked);
-      this._featuresGroup.clearLayers();
+      this._featureGroup.clearLayers();
       map._controllingInteractivity = true;
     } else {
       L.DomUtil.addClass(this._button, 'pressed');

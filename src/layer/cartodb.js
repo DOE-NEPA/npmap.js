@@ -22,9 +22,12 @@ var CartoDbLayer = L.TileLayer.extend({
   },
   statics: {
     GEOMETRY_TYPES: {
+      'st_linestring': 'line',
       'st_multilinestring': 'line',
+      'st_multipoint': 'point',
       'st_multipolygon': 'polygon',
-      'st_point': 'point'
+      'st_point': 'point',
+      'st_polygon': 'polygon'
     }
   },
   _update: function() {
